@@ -680,3 +680,68 @@ button:hover {
 .google-btn:hover {
   background: #f1f1f1;
 }
+/* בועת הודעה */
+.message {
+  max-width: 70%;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: flex;
+  flex-direction: column;
+}
+
+/* תמונות בתוך הודעה */
+.chat-img {
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-top: 6px;
+  display: block;
+  object-fit: cover;
+}
+/* בועת הודעה */
+.message {
+  max-width: 70%;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: flex;
+  flex-direction: column;
+}
+
+/* תמונות בתוך הודעה */
+.chat-img {
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-top: 6px;
+  display: block;
+  object-fit: cover;
+}
+.file-btn {
+  display: inline-block;
+  padding: 8px 14px;
+  background: #4a90e2;
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+  margin-right: 8px;
+  user-select: none;
+}
+
+.file-btn:hover {
+  background: #357bd8;
+  transform: scale(1.05);
+}
+
+.file-btn:active {
+  transform: scale(0.95);
+}

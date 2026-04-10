@@ -26,7 +26,7 @@ import {
 
 
 // ===============================
-// 🎯 HTML Elements
+// 🎯 Elements
 // ===============================
 
 const chatBox = document.getElementById("chatBox");
@@ -35,21 +35,21 @@ const sendBtn = document.getElementById("sendBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const adminPanelBtn = document.getElementById("adminPanelBtn");
 const statusBox = document.getElementById("statusBox");
+const fileInput = document.getElementById("fileInput");
 
 
 // ===============================
-// 👤 User State
+// 👤 State
 // ===============================
 
 let currentUser = null;
 let currentUsername = "Guest";
 let isAdmin = false;
-
 let timerInterval = null;
 
 
 // ===============================
-// 🔐 Auth Check
+// 🔐 Auth
 // ===============================
 
 onAuthStateChanged(auth, async (user) => {
@@ -70,8 +70,7 @@ onAuthStateChanged(auth, async (user) => {
   const userSnap = await getDoc(userRef);
 
   if (userSnap.exists()) {
-    const data = userSnap.data();
-    isAdmin = data.isAdmin || false;
+    isAdmin = userSnap.data().isAdmin === true;
   }
 
   if (isAdmin) {
@@ -83,25 +82,24 @@ onAuthStateChanged(auth, async (user) => {
 
 
 // ===============================
-// 🚫 UI BLOCK SYSTEM
+// 🚫 UI BLOCK
 // ===============================
 
 function blockUI(text) {
   messageInput.style.display = "none";
   sendBtn.style.display = "none";
+  if (fileInput) fileInput.style.display = "none";
   statusBox.innerHTML = `⛔ ${text}`;
 }
 
 function unblockUI() {
   messageInput.style.display = "block";
   sendBtn.style.display = "inline-block";
+  if (fileInput) fileInput.style.display = "block";
   statusBox.innerHTML = "";
 }
 
 function startCountdown(until) {
-  messageInput.style.display = "none";
-  sendBtn.style.display = "none";
-
   clearInterval(timerInterval);
 
   timerInterval = setInterval(() => {
@@ -116,11 +114,48 @@ function startCountdown(until) {
     const min = Math.floor(diff / 1000 / 60);
     const sec = Math.floor(diff / 1000) % 60;
 
-    statusBox.innerHTML = `
-      ⏳ אתה חסום זמנית<br>
-      נשאר: ${min}:${sec}
-    `;
+    statusBox.innerHTML = `⏳ חסום זמנית: ${min}:${sec}`;
   }, 1000);
+}
+
+
+// ===============================
+// ✅ canSend
+// ===============================
+
+async function canSend(userId) {
+  const snap = await getDoc(doc(db, "users", userId));
+
+  if (!snap.exists()) return true;
+
+  const data = snap.data();
+
+  if (data.banned) {
+    blockUI("נחסמת מהמערכת");
+    return false;
+  }
+
+  if (data.timeoutUntil && data.timeoutUntil > Date.now()) {
+    startCountdown(data.timeoutUntil);
+    return false;
+  }
+
+  unblockUI();
+  return true;
+}
+
+
+// ===============================
+// 🧠 Base64
+// ===============================
+
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+  });
 }
 
 
@@ -130,43 +165,18 @@ function startCountdown(until) {
 
 sendBtn.addEventListener("click", sendMessage);
 
-messageInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") sendMessage();
+messageInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendMessage();
+  }
 });
-
-async function canSend(userId) {
-  const snap = await getDoc(doc(db, "users", userId));
-  const data = snap.data();
-
-  if (data?.banned) {
-    blockUI("🚫 נחסמת מהמערכת");
-    return false;
-  }
-
-  if (data?.timeoutUntil && data.timeoutUntil > Date.now()) {
-    startCountdown(data.timeoutUntil);
-    return false;
-  }
-
-  // אם אין טיים־אאוט → תבטל UI חסימה אם היה
-  unblockUI(); {
-    startCountdown(data.timeoutUntil);
-    return false;
-  }
-
-  // אם אין טיים־אאוט → תבטל UI חסימה אם היה
-  unblockUI(); {
-    startCountdown(data.timeoutUntil);
-    return false;
-  }
-
-  return true;
-}
 
 async function sendMessage() {
   const text = messageInput.value.trim();
+  const file = fileInput?.files?.[0];
 
-  if (!text) return;
+  if (!text && !file) return;
 
   if (!currentUser) {
     alert("אתה לא מחובר");
@@ -175,18 +185,26 @@ async function sendMessage() {
 
   if (!(await canSend(currentUser.uid))) return;
 
+  let imageBase64 = null;
+
+  if (file) {
+    imageBase64 = await toBase64(file);
+  }
+
   try {
     await addDoc(collection(db, "messages"), {
       name: currentUsername,
-      text: text,
+      text: text || "",
+      image: imageBase64,
       createdAt: serverTimestamp()
     });
 
     messageInput.value = "";
+    if (fileInput) fileInput.value = "";
 
-  } catch (error) {
-    console.error(error);
-    alert("אין הרשאה לשלוח הודעה!");
+  } catch (err) {
+    console.error(err);
+    alert("שגיאה בשליחה");
   }
 }
 
@@ -206,13 +224,25 @@ onSnapshot(q, (snapshot) => {
     const div = document.createElement("div");
     div.classList.add("message");
 
-    div.classList.add(
-      data.name === currentUsername ? "my-message" : "other-message"
-    );
+    if (data.name === currentUsername) {
+      div.classList.add("my-message");
+    } else {
+      div.classList.add("other-message");
+    }
+
+    let content = "";
+
+    if (data.text) {
+      content += `<div>${data.text}</div>`;
+    }
+
+    if (data.image) {
+      content += `<img src="${data.image}" class="chat-img">`;
+    }
 
     div.innerHTML = `
       <span class="name">${data.name}</span>
-      ${data.text}
+      ${content}
     `;
 
     chatBox.appendChild(div);
@@ -234,20 +264,20 @@ logoutBtn.addEventListener("click", async () => {
 
 
 // ===============================
-// ⛔ Chat Disabled
+// ⛔ Chat disabled
 // ===============================
 
 async function checkChatDisabled() {
   const snap = await getDoc(doc(db, "settings", "chat"));
 
-  if (snap.exists() && snap.data()?.disabled && !isAdmin) {
+  if (snap.exists() && snap.data().disabled && !isAdmin) {
     document.body.innerHTML = "⛔ הצ'אט מושבת";
   }
 }
 
 
 // ===============================
-// 🧹 Admin: Clear Chat
+// 🧹 Admin clear chat
 // ===============================
 
 window.clearChat = async function () {
@@ -259,12 +289,12 @@ window.clearChat = async function () {
     await deleteDoc(doc(db, "messages", d.id));
   });
 
-  alert("🧹 הצ'אט נמחק");
+  alert("הצ'אט נמחק");
 };
 
 
 // ===============================
-// 🔒 Admin: Toggle Chat
+// 🔒 Admin toggle chat
 // ===============================
 
 window.disableChat = async function (value) {
@@ -274,44 +304,18 @@ window.disableChat = async function (value) {
     disabled: value
   });
 
-  alert(value ? "⛔ צ'אט נסגר" : "✅ צ'אט נפתח");
+  alert(value ? "צ'אט נסגר" : "צ'אט נפתח");
 };
 
 
 // ===============================
-// 👑 Admin: Remove Timeout
-// ===============================
-
-window.removeTimeout = async function (uid) {
-  if (!isAdmin) return;
-
-  await updateDoc(doc(db, "users", uid), {
-    timeoutUntil: null
-  });
-
-  alert("⏳ הטיים־אאוט בוטל");
-};
-
-
-// ===============================
-// 👑 Admin: Remove Admin
-// ===============================
-
-window.removeAdmin = async function (uid) {
-  if (!isAdmin) return;
-
-  await updateDoc(doc(db, "users", uid), {
-    isAdmin: false
-  });
-
-  alert("👑 הוסר מאדמין");
-};
-
-
-// ===============================
-// 👑 Admin Panel Button
+// 👑 Admin panel
 // ===============================
 
 adminPanelBtn.addEventListener("click", () => {
   window.location.href = "admin.html";
+});
+fileInput.addEventListener("change", () => {
+  const fileName = document.getElementById("fileName");
+  fileName.textContent = fileInput.files[0]?.name || "";
 });
