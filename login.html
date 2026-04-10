@@ -1,137 +1,140 @@
 <!DOCTYPE html>
-<html lang="he">
+<html lang="he" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat App - Login</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .container {
-      background-color: #fff;
-      padding: 40px 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      width: 350px;
-      text-align: center;
-    }
-
-    h2 {
-      margin-bottom: 25px;
-      color: #333;
-    }
-
-    input[type="email"],
-    input[type="password"] {
-      width: 100%;
-      padding: 12px 15px;
-      margin: 10px 0 20px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 16px;
-    }
-
-    input:focus {
-      border-color: #4CAF50;
-      outline: none;
-    }
-
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 12px 0;
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    #registerBtn {
-      margin-top: 15px;
-      background-color: #f44336;
-    }
-
-    #registerBtn:hover {
-      background-color: #d32f2f;
-    }
-
-    .error {
-      color: red;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-  </style>
+  <title>התחברות</title>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <div class="container">
-    <h2>התחברות</h2>
+
+  <div class="login-container">
+
+    <h2>🔐 התחברות</h2>
+
     <input type="email" id="email" placeholder="אימייל">
     <input type="password" id="password" placeholder="סיסמה">
+
     <button id="loginBtn">התחבר</button>
-    <button id="registerBtn" onclick="window.location.href='register.html'">יצירת משתמש חדש</button>
-    <div id="errorMsg" class="error"></div>
+
+    <button id="googleBtn" class="google-btn">
+      <img
+        src="https://techdocs.akamai.com/identity-cloud/img/social-login/identity-providers/iconfinder-new-google-favicon-682665.png">
+      התחבר עם Google
+    </button>
+
+    <div id="error" class="error"></div>
+
   </div>
 
-  <!-- Firebase SDK -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyA9XpGHgpzeUvA8CGIL-OYuKOTcTKKB_rg",
-      authDomain: "chat-app-6c55d.firebaseapp.com",
-      projectId: "chat-app-6c55d",
-      storageBucket: "chat-app-6c55d.firebasestorage.app",
-      messagingSenderId: "193935015893",
-      appId: "1:193935015893:web:535f24e6e67e0ac91fc75c"
-    };
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    const loginBtn = document.getElementById("loginBtn");
-    const errorMsg = document.getElementById("errorMsg");
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // בדיקה אם המשתמש כבר מחובר
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        window.location.href = "index.html";
-      }
+// =========================
+// 🔥 Firebase Config
+// =========================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA9XpGHgpzeUvA8CGIL-OYuKOTcTKKB_rg",
+  authDomain: "chat-app-6c55d.firebaseapp.com",
+  projectId: "chat-app-6c55d",
+  storageBucket: "chat-app-6c55d.appspot.com",
+  messagingSenderId: "193935015893",
+  appId: "1:193935015893:web:535f24e6e67e0ac91fc75c",
+};
+
+// =========================
+// 🚀 Init
+// =========================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const provider = new GoogleAuthProvider();
+
+const errorBox = document.getElementById("error");
+
+// =========================
+// 👤 שמירת משתמש
+// =========================
+
+async function saveUser(user, providerType) {
+  const userRef = doc(db, "users", user.uid);
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists()) {
+    await setDoc(userRef, {
+      email: user.email,
+      username: user.displayName || user.email,
+      provider: providerType,
+      isAdmin: false,
+      createdAt: new Date()
     });
+  }
 
-    loginBtn.addEventListener("click", async () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+  const updated = await getDoc(userRef);
+  const data = updated.data();
 
-      if (!email || !password) {
-        errorMsg.textContent = "אנא מלא את כל השדות";
-        return;
-      }
+  sessionStorage.setItem("uid", user.uid);
+  sessionStorage.setItem("username", data.username);
+  sessionStorage.setItem("isAdmin", data.isAdmin === true ? "true" : "false");
 
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        // התחברות הצליחה → הפניה ל-index.html
-        window.location.href = "index.html";
-      } catch (error) {
-        console.error("Error logging in:", error.message);
-        errorMsg.textContent = "שגיאה בהתחברות: " + error.message;
-      }
-    });
+  window.location.href = "chat.html";
+}
+
+// =========================
+// 📧 Email Login
+// =========================
+
+document.getElementById("loginBtn").onclick = async () => {
+  try {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+
+    await saveUser(userCred.user, "email");
+
+  } catch (err) {
+    errorBox.innerText = err.message;
+  }
+};
+
+// =========================
+// 🔵 Google Login
+// =========================
+
+document.getElementById("googleBtn").onclick = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+
+    await saveUser(result.user, "google");
+
+  } catch (err) {
+    console.log(err);
+    errorBox.innerText = err.message;
+  }
+};
   </script>
+
 </body>
+
 </html>

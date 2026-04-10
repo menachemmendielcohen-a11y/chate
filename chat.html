@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>צ'אט אמיתי</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      💬 צ'אט בזמן אמת
+      <button id="logoutBtn">התנתק</button>
+      <button id="adminPanelBtn" style="display:none;">ניהול</button>
+    </div>
+    <div id="adminPanel">
+
+    </div>
+    <div id="chatBox" class="chat-box"></div>
+
+    <div class="chat-input">
+      <div id="statusBox" style="color:red;font-weight:bold;margin:10px;"></div>
+
+      <input id="messageInput" placeholder="כתוב הודעה..." />
+      <button id="sendBtn">שלח</button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>

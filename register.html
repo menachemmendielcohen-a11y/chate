@@ -1,150 +1,27 @@
 <!DOCTYPE html>
-<html lang="he">
-
+<html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat App - Register</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .container {
-      background-color: #fff;
-      padding: 40px 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      width: 350px;
-      text-align: center;
-    }
-
-    .container h2 {
-      margin-bottom: 25px;
-      color: #333;
-    }
-
-    input[type="text"],
-    input[type="email"],
-    input[type="password"] {
-      width: 100%;
-      padding: 12px 15px;
-      margin: 10px 0 20px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 16px;
-    }
-
-    input[type="text"]:focus,
-    input[type="email"]:focus,
-    input[type="password"]:focus {
-      border-color: #4CAF50;
-      outline: none;
-    }
-
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 12px 0;
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      margin-top: 10px;
-    }
-
-    button:hover {
-      background-color: #45a049;
-    }
-
-    #backBtn {
-      background-color: #f44336;
-    }
-
-    #backBtn:hover {
-      background-color: #d32f2f;
-    }
-
-    .error {
-      color: red;
-      margin-top: 10px;
-    }
-  </style>
+  <title>רישום משתמש</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <div class="container">
-    <h2>הרשמה</h2>
-    <input type="text" id="username" placeholder="שם משתמש">
-    <input type="email" id="email" placeholder="אימייל">
-    <input type="password" id="password" placeholder="סיסמה">
-    <button id="registerBtn">הרשם</button>
-    <button id="backBtn">חזור להתחברות</button>
+
+  <div class="login-container">
+    <h2>📝 רישום משתמש חדש</h2>
+
+    <input type="text" id="regName" placeholder="שם משתמש">
+    <input type="email" id="regEmail" placeholder="אימייל">
+    <input type="password" id="regregPassword" placeholder="סיסמה">
+    <input type="password" id="regPasswordConfirm" placeholder="אשר סיסמה">
+
+    <button id="registerUserBtn">הרשם</button>
+    <button id="backLoginBtn">חזור להתחברות</button>
+
     <div id="errorMsg" class="error"></div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyA9XpGHgpzeUvA8CGIL-OYuKOTcTKKB_rg",
-      authDomain: "chat-app-6c55d.firebaseapp.com",
-      projectId: "chat-app-6c55d",
-      storageBucket: "chat-app-6c55d.firebasestorage.app",
-      messagingSenderId: "193935015893",
-      appId: "1:193935015893:web:535f24e6e67e0ac91fc75c",
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const registerBtn = document.getElementById("registerBtn");
-    registerBtn.addEventListener("click", async () => {
-      const username = document.getElementById("username").value;
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const errorMsg = document.getElementById("errorMsg");
-
-      if (!username || !email || !password) {
-        errorMsg.textContent = "אנא מלא את כל השדות";
-        return;
-      }
-
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const userId = userCredential.user.uid;
-
-        await setDoc(doc(db, "users", userId), {
-          username: username,
-          email: email,
-          createdAt: new Date()
-        });
-
-        alert("נרשמת בהצלחה!");
-        errorMsg.textContent = "";
-      } catch (error) {
-        console.error("Error registering user:", error.message);
-        errorMsg.textContent = "שגיאה בהרשמה: " + error.message;
-      }
-    });
-
-    const backBtn = document.getElementById("backBtn");
-    backBtn.addEventListener("click", () => {
-      window.location.href = "login.html"; // שנה לנתיב לעמוד התחברות שלך
-    });
-  </script>
+  <script type="module" src="register.js"></script>
 </body>
-
 </html>

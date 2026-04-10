@@ -1,45 +1,25 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { auth, db } from "./firebaseConfig.js";
+
 import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
 import {
-  getFirestore,
-  collection,
-  onSnapshot,
   doc,
   getDoc,
+  collection,
+  getDocs,
   deleteDoc,
-  query,
-  orderBy
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA9XpGHgpzeUvA8CGIL-OYUKOTCTKKB_rg",
-  authDomain: "chat-app-6c55d.firebaseapp.com",
-  projectId: "chat-app-6c55d",
-  storageBucket: "chat-app-6c55d.firebasestorage.app",
-  messagingSenderId: "193935015893",
-  appId: "1:193935015893:web:535f24e6e67e0ac91fc75c",
-  measurementId: "G-XC81L59WZV"
-};
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// ===============================
+// 👑 בדיקת אדמין
+// ===============================
 
-const usersList = document.getElementById("usersList");
-const messagesList = document.getElementById("messagesList");
-
-document.getElementById("backChatBtn").addEventListener("click", () => {
-  window.location.href = "index.html";
-});
-
-document.getElementById("logoutAdminBtn").addEventListener("click", async () => {
-  await signOut(auth);
-  window.location.href = "login.html";
-});
+let isAdmin = false;
+let currentUser = null;
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -47,79 +27,102 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
+  currentUser = user;
 
-  if (!userSnap.exists() || !userSnap.data().isAdmin) {
-    alert("אין לך גישה לדשבורד מנהל!");
-    window.location.href = "index.html";
+  const userRef = doc(db, "users", user.uid);
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists() || snap.data().isAdmin !== true) {
+    document.body.innerHTML = "⛔ אין לך הרשאה להיכנס לדף הזה";
     return;
   }
 
-  loadUsers(user.uid);
-  loadMessages();
+  isAdmin = true;
+
+  console.log("🔥 Admin logged in");
+
+  loadUsers();
 });
 
-function loadUsers(currentUid) {
-  onSnapshot(collection(db, "users"), (snapshot) => {
-    usersList.innerHTML = "";
 
-    snapshot.forEach((docSnap) => {
-      const user = docSnap.data();
-      const userId = docSnap.id;
+// ===============================
+// 👥 טעינת משתמשים
+// ===============================
 
-      const div = document.createElement("div");
-      div.className = "admin-card";
-      div.innerHTML = `
-        <strong>${escapeHTML(user.username || "ללא שם")}</strong><br>
-        ${escapeHTML(user.email || "")}<br>
-        ${user.isAdmin ? "👑 מנהל" : "👤 משתמש"}
-        ${userId !== currentUid ? `<br><button onclick="deleteUser('${userId}')">מחק משתמש</button>` : ""}
-      `;
-      usersList.appendChild(div);
-    });
+async function loadUsers() {
+  const usersRef = collection(db, "users");
+  const snapshot = await getDocs(usersRef);
+
+  const container = document.getElementById("usersList");
+  container.innerHTML = "";
+
+  snapshot.forEach((docSnap) => {
+    const user = docSnap.data();
+
+    container.innerHTML += `
+      <div style="border:1px solid #ccc; margin:8px; padding:10px; border-radius:8px;">
+
+        <p><b>שם:</b> ${user.username || "ללא שם"}</p>
+        <p><b>אימייל:</b> ${user.email}</p>
+
+        <p><b>אדמין:</b> ${user.isAdmin ? "כן 👑" : "לא"}</p>
+
+        <button onclick="timeoutUser('${docSnap.id}', 10)">⏳ טיים־אאוט 10 דק'</button>
+
+      </div>
+    `;
   });
 }
 
-function loadMessages() {
-  const q = query(collection(db, "messages"), orderBy("createdAt"));
 
-  onSnapshot(q, (snapshot) => {
-    messagesList.innerHTML = "";
+// ===============================
+// 🧹 ניקוי צ'אט
+// ===============================
 
-    snapshot.forEach((docSnap) => {
-      const msg = docSnap.data();
-      const msgId = docSnap.id;
+window.clearChat = async function () {
+  if (!isAdmin) return;
 
-      const div = document.createElement("div");
-      div.className = "admin-card";
-      div.innerHTML = `
-        <strong>${escapeHTML(msg.name || "משתמש")}</strong><br>
-        ${escapeHTML(msg.text || "")}
-        <br><button onclick="deleteMessage('${msgId}')">מחק הודעה</button>
-      `;
-      messagesList.appendChild(div);
-    });
+  const snap = await getDocs(collection(db, "messages"));
+
+  const tasks = [];
+
+  snap.forEach((d) => {
+    tasks.push(deleteDoc(doc(db, "messages", d.id)));
   });
-}
 
-window.deleteMessage = async function(msgId) {
-  if (confirm("למחוק את ההודעה?")) {
-    await deleteDoc(doc(db, "messages", msgId));
-  }
+  await Promise.all(tasks);
+
+  alert("🧹 הצ'אט נמחק");
 };
 
-window.deleteUser = async function(userId) {
-  if (confirm("למחוק את המשתמש?")) {
-    await deleteDoc(doc(db, "users", userId));
-  }
+
+// ===============================
+// ⛔ סגירה / פתיחה של צ'אט
+// ===============================
+
+window.disableChat = async function (value) {
+  if (!isAdmin) return;
+
+  await setDoc(doc(db, "settings", "chat"), {
+    disabled: value
+  });
+
+  alert(value ? "⛔ הצ'אט נסגר" : "✅ הצ'אט נפתח");
 };
 
-function escapeHTML(str) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+
+// ===============================
+// 🚫 טיים־אאוט למשתמש
+// ===============================
+
+window.timeoutUser = async function (userId, minutes) {
+  if (!isAdmin) return;
+
+  const until = Date.now() + minutes * 60000;
+
+  await setDoc(doc(db, "users", userId), {
+    timeoutUntil: until
+  }, { merge: true });
+
+  alert("⏳ משתמש קיבל טיים־אאוט");
+};
