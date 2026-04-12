@@ -6,14 +6,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>צ'אט אמיתי</title>
   <link rel="stylesheet" href="style.css">
-</head>
+  <link rel="icon" type="image/png" href="./icone.png">
 
+</head>
+<style>
+  /* הלוגו */
+.chat-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-left: 10px;
+  border: 2px solid white;
+  background: white;
+  padding: 3px;
+  transition: 0.3s ease;
+}
+
+/* אפקט מעבר */
+.chat-icon:hover {
+  transform: scale(1.1) rotate(3deg);
+}
+.chat-icon {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+</style>
 <body>
 
   <div class="chat-container">
+
     <div class="chat-header">
-      💬 צ'אט בזמן אמת
-      <button id="logoutBtn">התנתק</button>
+      <img src="./icone.png" alt="Icon" class="chat-icon">
+     <button id="logoutBtn">התנתק</button>
       <button id="adminPanelBtn" style="display:none;">ניהול</button>
     </div>
     <div id="adminPanel">

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>רישום משתמש</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="./icon.png">
+
+</head>
+
+<body>
+
+  <div class="login-container">
+    <h2>📝 רישום משתמש חדש</h2>
+
+    <input type="text" id="regName" placeholder="שם משתמש">
+    <input type="email" id="regEmail" placeholder="אימייל">
+    <input type="password" id="regregPassword" placeholder="סיסמה">
+    <input type="password" id="regPasswordConfirm" placeholder="אשר סיסמה">
+
+    <button id="registerUserBtn">הרשם</button>
+    <button id="backLoginBtn">חזור להתחברות</button>
+
+    <div id="errorMsg" class="error"></div>
+  </div>
+
+  <script type="module" src="register.js"></script>
+</body>
+
+</html>

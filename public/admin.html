@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>דשבורד מנהל</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="./icon.png">
+</head>
+
+<body>
+
+  <div class="admin-container">
+
+    <!-- כותרת -->
+    <div class="admin-header">
+      🛠️ דשבורד מנהל
+
+      <button id="backBtn">חזרה לצ'אט</button>
+    </div>
+
+    <!-- פעולות אדמין -->
+    <div class="admin-actions">
+      <button onclick="clearChat()">🧹 נקה צ'אט</button>
+      <button onclick="disableChat(true)">⛔ סגור צ'אט</button>
+      <button onclick="disableChat(false)">✅ פתח צ'אט</button>
+    </div>
+
+    <!-- רשימת משתמשים -->
+    <h3>👥 משתמשים</h3>
+    <div id="usersList"></div>
+
+  </div>
+
+  <!-- JS -->
+  <script type="module" src="admin.js"></script>
+
+  <!-- ניווט חזרה -->
+  <script>
+    document.getElementById("backBtn").addEventListener("click", () => {
+      window.location.href = "chat.html";
+    });
+  </script>
+
+</body>
+
+</html>

@@ -61,7 +61,7 @@
    * Authentication (Email/Password)
    * Firestore Database
 3. הוסף את פרטי Firebase לקובץ:
-
+A
 ```
 firebaseConfig.js
 ```
@@ -137,7 +137,7 @@ index.html
 
 ## 👨‍💻 יוצר
 
-נבנה על ידי מנדי כן
+נבנה על ידי מנדי כהן
 (המדריך הדיגיטלי 💻🔥)
 
 ---

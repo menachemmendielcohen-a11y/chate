@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>404</title>
+  <link rel="icon" type="image/png" href="./icon.png">
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
+
+    .box {
+      max-width: 400px;
+    }
+
+    h1 {
+      font-size: 80px;
+      margin: 0;
+      color: #ff4d4d;
+    }
+
+    p {
+      color: #aaa;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #4facfe;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2196f3;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="box">
+    <h1>404</h1>
+    <p>הדף שחיפשת לא נמצא 😢</p>
+
+    <button onclick="goHome()">חזרה לדף הבית</button>
+  </div>
+
+  <script>
+    function goHome() {
+      window.location.href = "/";
+    }
+  </script>
+
+</body>
+</html>
