@@ -64,7 +64,7 @@ onAuthStateChanged(auth, async (user) => {
 
 
 // ===============================
-// 👥 Load Users + Timer
+// 👥 Load Users
 // ===============================
 
 function loadUsers() {
@@ -85,10 +85,7 @@ function loadUsers() {
 
         const interval = setInterval(() => {
           const el = document.getElementById(`timer-${uid}`);
-          if (!el) {
-            clearInterval(interval);
-            return;
-          }
+          if (!el) return clearInterval(interval);
 
           const diff = data.timeoutUntil - Date.now();
 
@@ -115,6 +112,7 @@ function loadUsers() {
           <button onclick="banUser('${uid}')">🚫 חסום</button>
           <button onclick="unbanUser('${uid}')">✅ בטל חסימה</button>
           <button onclick="makeAdmin('${uid}')">👑 הפוך לאדמין</button>
+          <button onclick="removeAdmin('${uid}')">👤 הסר אדמין</button>
         </div>
       `;
 
@@ -141,7 +139,6 @@ window.setTimeoutUser = async function (uid) {
   alert("⏳ טיים־אאוט הופעל");
 };
 
-
 window.removeTimeout = async function (uid) {
   await updateDoc(doc(db, "users", uid), {
     timeoutUntil: null
@@ -163,7 +160,6 @@ window.banUser = async function (uid) {
   alert("🚫 המשתמש נחסם");
 };
 
-
 window.unbanUser = async function (uid) {
   await updateDoc(doc(db, "users", uid), {
     banned: false
@@ -174,7 +170,7 @@ window.unbanUser = async function (uid) {
 
 
 // ===============================
-// 👑 Admin
+// 👑 Admin Control (FIX ADDED)
 // ===============================
 
 window.makeAdmin = async function (uid) {
@@ -183,6 +179,14 @@ window.makeAdmin = async function (uid) {
   });
 
   alert("👑 המשתמש הפך לאדמין");
+};
+
+window.removeAdmin = async function (uid) {
+  await updateDoc(doc(db, "users", uid), {
+    isAdmin: false
+  });
+
+  alert("👤 האדמין הוסר");
 };
 
 
@@ -202,14 +206,14 @@ window.clearChat = async function () {
 
 
 // ===============================
-// ⛔ Toggle Chat (מתוקן!)
+// ⛔ Toggle Chat
 // ===============================
 
 window.disableChat = async function (value) {
   try {
     await setDoc(doc(db, "settings", "chat"), {
       disabled: value
-    }, { merge: true }); // 🔥 חשוב!
+    }, { merge: true });
 
     alert(value ? "⛔ צ'אט נסגר" : "✅ צ'אט נפתח");
   } catch (err) {
