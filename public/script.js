@@ -77,7 +77,7 @@ onAuthStateChanged(auth, async (user) => {
     adminPanelBtn.style.display = "inline-block";
   }
 
-  checkChatDisabled();
+  checkChatDisabled(); // 🔥 חשוב
 });
 
 
@@ -111,7 +111,7 @@ function startCountdown(until) {
       return;
     }
 
-    const min = Math.floor(diff / 1000 / 60);
+    const min = Math.floor(diff / 60000);
     const sec = Math.floor(diff / 1000) % 60;
 
     statusBox.innerHTML = `⏳ חסום זמנית: ${min}:${sec}`;
@@ -264,15 +264,21 @@ logoutBtn.addEventListener("click", async () => {
 
 
 // ===============================
-// ⛔ Chat disabled
+// ⛔ Chat disabled (LIVE 🔥)
 // ===============================
 
-async function checkChatDisabled() {
-  const snap = await getDoc(doc(db, "settings", "chat"));
+function checkChatDisabled() {
+  onSnapshot(doc(db, "settings", "chat"), (snap) => {
+    if (!snap.exists()) return;
 
-  if (snap.exists() && snap.data().disabled && !isAdmin) {
-    document.body.innerHTML = "⛔ הצ'אט מושבת";
-  }
+    const data = snap.data();
+
+    if (data.disabled && !isAdmin) {
+      blockUI("הצ'אט סגור על ידי מנהל");
+    } else {
+      unblockUI();
+    }
+  });
 }
 
 
@@ -294,17 +300,22 @@ window.clearChat = async function () {
 
 
 // ===============================
-// 🔒 Admin toggle chat
+// 🔒 Admin toggle chat (FIXED 🔥)
 // ===============================
 
 window.disableChat = async function (value) {
   if (!isAdmin) return;
 
-  await setDoc(doc(db, "settings", "chat"), {
-    disabled: value
-  });
+  try {
+    await setDoc(doc(db, "settings", "chat"), {
+      disabled: value
+    }, { merge: true });
 
-  alert(value ? "צ'אט נסגר" : "צ'אט נפתח");
+    alert(value ? "צ'אט נסגר" : "צ'אט נפתח");
+  } catch (err) {
+    console.error(err);
+    alert("שגיאה בעדכון");
+  }
 };
 
 
@@ -315,7 +326,17 @@ window.disableChat = async function (value) {
 adminPanelBtn.addEventListener("click", () => {
   window.location.href = "admin.html";
 });
-fileInput.addEventListener("change", () => {
-  const fileName = document.getElementById("fileName");
-  fileName.textContent = fileInput.files[0]?.name || "";
-});
+
+
+// ===============================
+// 📎 File name display
+// ===============================
+
+if (fileInput) {
+  fileInput.addEventListener("change", () => {
+    const fileName = document.getElementById("fileName");
+    if (fileName) {
+      fileName.textContent = fileInput.files[0]?.name || "";
+    }
+  });
+}

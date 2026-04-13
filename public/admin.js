@@ -1,3 +1,7 @@
+// ===============================
+// 🔥 Firebase
+// ===============================
+
 import { auth, db } from "./firebaseConfig.js";
 
 import {
@@ -5,9 +9,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
-  doc,
-  getDoc,
   collection,
+  onSnapshot,
+  doc,
+  updateDoc,
+  getDoc,
   getDocs,
   deleteDoc,
   setDoc
@@ -15,11 +21,23 @@ import {
 
 
 // ===============================
-// 👑 בדיקת אדמין
+// 🎯 Elements
 // ===============================
 
-let isAdmin = false;
+const usersList = document.getElementById("usersList");
+
+
+// ===============================
+// 👤 State
+// ===============================
+
 let currentUser = null;
+let isAdmin = false;
+
+
+// ===============================
+// 🔐 Auth Check
+// ===============================
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -29,100 +47,173 @@ onAuthStateChanged(auth, async (user) => {
 
   currentUser = user;
 
-  const userRef = doc(db, "users", user.uid);
-  const snap = await getDoc(userRef);
+  const userSnap = await getDoc(doc(db, "users", user.uid));
 
-  if (!snap.exists() || snap.data().isAdmin !== true) {
-    document.body.innerHTML = "⛔ אין לך הרשאה להיכנס לדף הזה";
-    return;
+  if (userSnap.exists()) {
+    isAdmin = userSnap.data().isAdmin === true;
   }
 
-  isAdmin = true;
-
-  console.log("🔥 Admin logged in");
+  if (!isAdmin) {
+    alert("אין לך הרשאת מנהל");
+    window.location.href = "chat.html";
+    return;
+  }
 
   loadUsers();
 });
 
 
 // ===============================
-// 👥 טעינת משתמשים
+// 👥 Load Users + Timer
 // ===============================
 
-async function loadUsers() {
-  const usersRef = collection(db, "users");
-  const snapshot = await getDocs(usersRef);
+function loadUsers() {
+  onSnapshot(collection(db, "users"), (snapshot) => {
+    usersList.innerHTML = "";
 
-  const container = document.getElementById("usersList");
-  container.innerHTML = "";
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const uid = docSnap.id;
 
-  snapshot.forEach((docSnap) => {
-    const user = docSnap.data();
+      const div = document.createElement("div");
+      div.className = "user-card";
 
-    container.innerHTML += `
-      <div style="border:1px solid #ccc; margin:8px; padding:10px; border-radius:8px;">
+      let timerHTML = "";
 
-        <p><b>שם:</b> ${user.username || "ללא שם"}</p>
-        <p><b>אימייל:</b> ${user.email}</p>
+      if (data.timeoutUntil && data.timeoutUntil > Date.now()) {
+        timerHTML = `<div class="timer" id="timer-${uid}">⏳ טוען...</div>`;
 
-        <p><b>אדמין:</b> ${user.isAdmin ? "כן 👑" : "לא"}</p>
+        const interval = setInterval(() => {
+          const el = document.getElementById(`timer-${uid}`);
+          if (!el) {
+            clearInterval(interval);
+            return;
+          }
 
-        <button onclick="timeoutUser('${docSnap.id}', 10)">⏳ טיים־אאוט 10 דק'</button>
+          const diff = data.timeoutUntil - Date.now();
 
-      </div>
-    `;
+          if (diff <= 0) {
+            el.innerHTML = "✅ נגמר";
+            clearInterval(interval);
+            return;
+          }
+
+          const m = Math.floor(diff / 60000);
+          const s = Math.floor(diff / 1000) % 60;
+
+          el.innerHTML = `⏳ ${m}:${s.toString().padStart(2, "0")}`;
+        }, 1000);
+      }
+
+      div.innerHTML = `
+        <div><b>${data.email || uid}</b></div>
+        ${timerHTML}
+
+        <div class="admin-buttons">
+          <button onclick="setTimeoutUser('${uid}')">⏳ טיים־אאוט</button>
+          <button onclick="removeTimeout('${uid}')">❌ בטל</button>
+          <button onclick="banUser('${uid}')">🚫 חסום</button>
+          <button onclick="unbanUser('${uid}')">✅ בטל חסימה</button>
+          <button onclick="makeAdmin('${uid}')">👑 הפוך לאדמין</button>
+        </div>
+      `;
+
+      usersList.appendChild(div);
+    });
   });
 }
 
 
 // ===============================
-// 🧹 ניקוי צ'אט
+// ⏳ Timeout
+// ===============================
+
+window.setTimeoutUser = async function (uid) {
+  const minutes = prompt("כמה דקות לחסום?");
+  if (!minutes) return;
+
+  const ms = Number(minutes) * 60 * 1000;
+
+  await updateDoc(doc(db, "users", uid), {
+    timeoutUntil: Date.now() + ms
+  });
+
+  alert("⏳ טיים־אאוט הופעל");
+};
+
+
+window.removeTimeout = async function (uid) {
+  await updateDoc(doc(db, "users", uid), {
+    timeoutUntil: null
+  });
+
+  alert("⏳ בוטל");
+};
+
+
+// ===============================
+// 🚫 Ban
+// ===============================
+
+window.banUser = async function (uid) {
+  await updateDoc(doc(db, "users", uid), {
+    banned: true
+  });
+
+  alert("🚫 המשתמש נחסם");
+};
+
+
+window.unbanUser = async function (uid) {
+  await updateDoc(doc(db, "users", uid), {
+    banned: false
+  });
+
+  alert("✅ החסימה בוטלה");
+};
+
+
+// ===============================
+// 👑 Admin
+// ===============================
+
+window.makeAdmin = async function (uid) {
+  await updateDoc(doc(db, "users", uid), {
+    isAdmin: true
+  });
+
+  alert("👑 המשתמש הפך לאדמין");
+};
+
+
+// ===============================
+// 🧹 Clear Chat
 // ===============================
 
 window.clearChat = async function () {
-  if (!isAdmin) return;
-
   const snap = await getDocs(collection(db, "messages"));
 
-  const tasks = [];
-
-  snap.forEach((d) => {
-    tasks.push(deleteDoc(doc(db, "messages", d.id)));
+  snap.forEach(async (d) => {
+    await deleteDoc(doc(db, "messages", d.id));
   });
-
-  await Promise.all(tasks);
 
   alert("🧹 הצ'אט נמחק");
 };
 
 
 // ===============================
-// ⛔ סגירה / פתיחה של צ'אט
+// ⛔ Toggle Chat (מתוקן!)
 // ===============================
 
 window.disableChat = async function (value) {
-  if (!isAdmin) return;
+  try {
+    await setDoc(doc(db, "settings", "chat"), {
+      disabled: value
+    }, { merge: true }); // 🔥 חשוב!
 
-  await setDoc(doc(db, "settings", "chat"), {
-    disabled: value
-  });
-
-  alert(value ? "⛔ הצ'אט נסגר" : "✅ הצ'אט נפתח");
-};
-
-
-// ===============================
-// 🚫 טיים־אאוט למשתמש
-// ===============================
-
-window.timeoutUser = async function (userId, minutes) {
-  if (!isAdmin) return;
-
-  const until = Date.now() + minutes * 60000;
-
-  await setDoc(doc(db, "users", userId), {
-    timeoutUntil: until
-  }, { merge: true });
-
-  alert("⏳ משתמש קיבל טיים־אאוט");
+    alert(value ? "⛔ צ'אט נסגר" : "✅ צ'אט נפתח");
+  } catch (err) {
+    console.error(err);
+    alert("שגיאה בעדכון מצב הצ'אט");
+  }
 };
