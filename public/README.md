@@ -143,5 +143,4 @@ index.html
 ---
 
 ## 📜 רישיון
-
-פרטי בלבד!
+פתוח לכולם בכתובת https://chat-app-6c55d.web.app/chat.html!!
